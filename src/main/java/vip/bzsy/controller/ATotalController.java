@@ -122,8 +122,10 @@ public class ATotalController {
         HSSFRow row = sheet.getRow(1);
         String ids = "";
         for (int i = 1; i <= 10; i++) {
+            log.info(CommonUtils.getCellStringValue(row.getCell(i)));
             String cellStringValue = CommonUtils.getCellStringValue(row.getCell(i)).trim();
             if (cellStringValue != ""){
+                log.info(cellStringValue);
                 Integer num = Integer.valueOf(cellStringValue.substring(0,1));
                 if (ids=="")
                     ids = num+"";
@@ -245,8 +247,12 @@ public class ATotalController {
      * @return 这一组的list
      */
     public List<LyqTable> copySort(List<LyqTable> copyList, Integer gruop) {
-        List<LyqTable> listgroupbySeq = lyqTableService.list(new QueryWrapper<LyqTable>()
-                .eq("lyq_group", gruop).orderByAsc("seq"));
+        long time1 = System.currentTimeMillis();
+        List<LyqTable> listgroupbySeq = lyqTableService.listByGroupOrderByAsc(gruop);
+//        List<LyqTable> listgroupbySeq = lyqTableService.list(new QueryWrapper<LyqTable>()
+//                .eq("lyq_group", gruop).orderByAsc("seq"));
+        long time2 = System.currentTimeMillis();
+        print("查询一组数据",time1,time2);
         //把key 复给 下一组 带上0组的seq
         for (int i = 0; i < groupRow; i++) {
             if (listgroupbySeq.get(i).getSeq() != i + 1) {
@@ -256,12 +262,22 @@ public class ATotalController {
             listgroupbySeq.get(i).setLyqSeq(copyList.get(i).getLyqSeq()); //把第零组的序列付给每一组
         }
         //批量更新  先删除 后添加
-        long l = System.currentTimeMillis();
-        lyqTableService.updateBatchById(listgroupbySeq);
+        long time3 = System.currentTimeMillis();
+        print("循环赋值",time2,time3);
+        lyqTableService.remove(new QueryWrapper<LyqTable>().eq("lyq_group", gruop));
+        long time6 = System.currentTimeMillis();
+        print("删除",time3,time6);
+        //lyqTableService.updateBatchById(listgroupbySeq);
+        lyqTableService.saveBatchByMyself(listgroupbySeq);
+        long time4 = System.currentTimeMillis();
         //按照降序查询出本组所有的list
-        List<LyqTable> listgroup = lyqTableService.list(new QueryWrapper<LyqTable>()
-                .eq("lyq_group", gruop).orderByDesc("lyq_value"));
-        return listgroup;
+        print("批量更新",time3,time4);
+        listgroupbySeq.sort((x,y)->y.getLyqValue()-x.getLyqValue());
+//        List<LyqTable> listgroup = lyqTableService.list(new QueryWrapper<LyqTable>()
+//                .eq("lyq_group", gruop).orderByDesc("lyq_value"));
+        long time5 = System.currentTimeMillis();
+        print("再次查询一次数据//自排序",time4,time5);
+        return listgroupbySeq;
     }
 
     /**
@@ -456,6 +472,11 @@ public class ATotalController {
         ServletOutputStream outputStream = response.getOutputStream();
         workbook.write(outputStream);
         return CommonResponse.success();
+    }
+
+
+    public void print(String value,Long start,Long end){
+        log.info(value+(end-start));
     }
 
     private static Integer groupInt = 3001; //多少组  3001

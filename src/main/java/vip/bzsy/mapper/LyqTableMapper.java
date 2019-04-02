@@ -21,4 +21,6 @@ public interface LyqTableMapper extends BaseMapper<LyqTable> {
     Integer updateToAdd(@Param("ids") Integer[] ids);
 
     void saveBatchByMyself(List<LyqTable> list);
+
+    List<LyqTable> listByGroupOrderByAsc(Integer gruop);
 }

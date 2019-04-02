@@ -53,4 +53,11 @@
             (#{item.seq},#{item.lyqGroup},#{item.lyqKey},#{item.lyqValue},#{item.lyqSeq})
         </foreach>
     </insert>
+    
+    <!--List<LyqTable> listByGroupOrderByAsc(Integer gruop);-->
+    <select id="listByGroupOrderByAsc" resultType="vip.bzsy.model.LyqTable">
+        SELECT * FROM `lyq_table`
+        WHERE `lyq_group` = #{gruop}
+        ORDER BY seq ASC
+    </select>
 </mapper>

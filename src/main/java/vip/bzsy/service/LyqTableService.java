@@ -18,4 +18,6 @@ public interface LyqTableService extends IService<LyqTable> {
     Integer updateToZore(String trim);
 
     void saveBatchByMyself(List<LyqTable> list);
+
+    List<LyqTable> listByGroupOrderByAsc(Integer gruop);
 }

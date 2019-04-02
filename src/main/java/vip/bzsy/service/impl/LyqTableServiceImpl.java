@@ -48,6 +48,11 @@ public class LyqTableServiceImpl extends ServiceImpl<LyqTableMapper, LyqTable> i
         lyqTableMapper.saveBatchByMyself(list);
     }
 
+    @Override
+    public List<LyqTable> listByGroupOrderByAsc(Integer gruop) {
+        return lyqTableMapper.listByGroupOrderByAsc(gruop);
+    }
+
     @SuppressWarnings("all")
     @Autowired
     private LyqTableMapper lyqTableMapper;
