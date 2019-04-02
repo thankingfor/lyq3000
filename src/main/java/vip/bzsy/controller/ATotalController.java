@@ -1,7 +1,10 @@
 package vip.bzsy.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -10,15 +13,21 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import vip.bzsy.common.CommonResponse;
+import vip.bzsy.common.CommonUtils;
+import vip.bzsy.model.LyqDate;
 import vip.bzsy.model.LyqTable;
 import vip.bzsy.model.Type2Vo;
+import vip.bzsy.service.LyqDateService;
 import vip.bzsy.service.LyqTableService;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -48,21 +57,29 @@ public class ATotalController {
      */
     @ResponseBody
     @RequestMapping(value = "/copy")
-    public CommonResponse copy(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public CommonResponse copy(MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        long startTime1 = System.currentTimeMillis();
+        List<Integer> anInt = (List<Integer>) intByFile.get("list");
+        String dateNum =(String)intByFile.get("dateNum");
         /**
          * 第一项任务
          */
-        List<LyqTable> list0 = copyStart();//给第0组赋值
+        List<LyqTable> list0 = copyStart(anInt);//给第0组赋值
         List<LyqTable> listMax = new LinkedList<>();//存放最大值
-        Map<String, List<LyqTable>> map = new HashMap<>(); //list都是按照value降序排序的，未修改过的
-        map.put("0", list0);
+        //Map<String, List<LyqTable>> map = new HashMap<>(); //list都是按照value降序排序的，未修改过的
+        //map.put("0", list0);
         //开始修改0-3000组的key
         for (int group = 1; group < groupInt; group++) {
+            long startTime = System.currentTimeMillis();
             List<LyqTable> tables = copySort(list0, group);//本组的降序的tables
             listMax.add(tables.get(0));//把最大的值存放
-            map.put(group + "", tables);//放入map中
+            //map.put(group + "", tables);//放入map中
             list0 = tables;//把list0改成下一组的方便循环
+            long endTime = System.currentTimeMillis();
+            log.info("转移："+group+"组"+(endTime-startTime));
         }
+        long endTime1 = System.currentTimeMillis();
+        log.info("第一个任务耗时："+(endTime1-startTime1));
         /**
          * 第二个任务 700个
          * 按照lyq_seq进行排序
@@ -82,14 +99,68 @@ public class ATotalController {
             }
         }
         //type2VoListType最终排序
-        type2VoListType.sort((x,y)->y.getValue()-x.getValue());
+        type2VoListType.sort((x, y) -> y.getValue() - x.getValue());
         //进行下载操作
-        copyDownMax(response, listMax,type2VoListType);//操作list进行下载  日期号  组  key value
+        copyDownMax(response, listMax, type2VoListType,dateNum);//操作list进行下载  日期号  组  key value
+        long endTime2 = System.currentTimeMillis();
+        log.info("第二个任务耗时："+(endTime2-endTime1));
+        log.info("一共耗时："+(endTime2-startTime1));
+        return CommonResponse.success();
+    }
+
+    /**
+     * 上传数据
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    @ResponseBody
+    @RequestMapping("/upload")
+    private CommonResponse getIntByFile(MultipartFile file) throws IOException {
+        HSSFWorkbook workbook = new HSSFWorkbook(file.getInputStream());
+        HSSFSheet sheet = workbook.getSheetAt(0);
+        HSSFRow row = sheet.getRow(1);
+        String ids = "";
+        for (int i = 1; i <= 10; i++) {
+            String cellStringValue = CommonUtils.getCellStringValue(row.getCell(i)).trim();
+            if (cellStringValue != ""){
+                Integer num = Integer.valueOf(cellStringValue.substring(0,1));
+                if (ids=="")
+                    ids = num+"";
+                else
+                    ids = ids + "," + num;
+            }
+        }
+        HSSFCell cellDateNum = row.getCell(0);
+        cellDateNum.setCellType(HSSFCell.CELL_TYPE_STRING);
+        String dateNum = cellDateNum.getStringCellValue();
+        LyqDate lyqDate = new LyqDate()
+                .setDateNum(dateNum)
+                .setValue(ids);
+        //log.info(lyqDate.toString());
+        long startTime = System.currentTimeMillis();
+        CommonResponse replace = replace(lyqDate);
+        long endTime = System.currentTimeMillis();
+        log.info("替换操作  归零 加加"+(endTime-startTime));
+        if (replace.getCode() == 0)
+            return CommonResponse.fail("日期号码重复了");
+        List<Integer> listant = new LinkedList<>();
+        for (int i = 0; i < groupRow; i++) {
+            HSSFCell cell = sheet.getRow(i + 1).getCell(12);
+            String cellStringValue = CommonUtils.getCellStringValue(cell);
+            cellStringValue = cellStringValue.substring(0,cellStringValue.length()-2);
+            //log.info(cellStringValue);
+            listant.add(Integer.valueOf(cellStringValue));
+        }
+        intByFile.clear();
+        intByFile.put("dateNum", lyqDate.getDateNum());
+        intByFile.put("list", listant);
         return CommonResponse.success();
     }
 
     /**
      * 返回前五条数据
+     *
      * @param listMap
      * @param group
      * @return
@@ -118,7 +189,7 @@ public class ATotalController {
         };
         List<Map.Entry<Integer, Integer>> lists = new ArrayList<>(map.entrySet());
         Collections.sort(lists, keyComparator);
-        log.info(lists.toString());
+        //log.info(lists.toString());
         List<Type2Vo> type2VoList = new LinkedList<>();
         for (int i = 0; i < 5; i++) {
             Type2Vo vo = new Type2Vo();
@@ -131,7 +202,7 @@ public class ATotalController {
     }
 
     public void copyDownMax(HttpServletResponse response, List<LyqTable> listMax,
-                            List<Type2Vo> type2VoListType) throws Exception {
+                            List<Type2Vo> type2VoListType,String dateNum) throws Exception {
         //操作list进行下载  日期号  组  key value
         HSSFWorkbook workbook = new HSSFWorkbook();//1.在内存中操作excel文件
         HSSFSheet sheet = workbook.createSheet();//2.创建工作谱
@@ -150,14 +221,14 @@ public class ATotalController {
             dataRow.createCell(1).setCellValue(table.getLyqKey());
             dataRow.createCell(2).setCellValue(table.getLyqValue());
         }
-        for (int i = 0;i < type2VoListType.size();i++){
+        for (int i = 0; i < type2VoListType.size(); i++) {
             HSSFRow dataRow = sheet.getRow(i + 1);
             dataRow.createCell(4).setCellValue("第" + type2VoListType.get(i).getGroup() + "组");
             dataRow.createCell(5).setCellValue(type2VoListType.get(i).getSeq());
             dataRow.createCell(6).setCellValue(type2VoListType.get(i).getValue());
         }
         //5.创建文件名
-        String fileName = "期号加.xls";
+        String fileName = dateNum+".xls";
         //6.获取输出流对象
         response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "utf-8"));
         response.setContentType("multipart/form-data");
@@ -184,7 +255,8 @@ public class ATotalController {
             listgroupbySeq.get(i).setLyqKey(copyList.get(i).getLyqKey()); //把上一组的key给这一组
             listgroupbySeq.get(i).setLyqSeq(copyList.get(i).getLyqSeq()); //把第零组的序列付给每一组
         }
-        //批量更新
+        //批量更新  先删除 后添加
+        long l = System.currentTimeMillis();
         lyqTableService.updateBatchById(listgroupbySeq);
         //按照降序查询出本组所有的list
         List<LyqTable> listgroup = lyqTableService.list(new QueryWrapper<LyqTable>()
@@ -195,11 +267,10 @@ public class ATotalController {
     /**
      * copy的初始化操作
      */
-    public List<LyqTable> copyStart() {
+    public List<LyqTable> copyStart(List<Integer> anInt) {
         List<LyqTable> listgroupbySeq = lyqTableService.list(new QueryWrapper<LyqTable>()
                 .eq("lyq_group", 0).orderByAsc("seq"));
         //模拟Excel获取3000个数据
-        List<Integer> anInt = get3000Int();
         for (int i = 0; i < groupRow; i++) {
             if (listgroupbySeq.get(i).getSeq() != i + 1) {
                 throw new RuntimeException("顺序不一致");
@@ -223,12 +294,41 @@ public class ATotalController {
      */
     @ResponseBody
     @RequestMapping(value = "/replace")
-    public CommonResponse replace(String ids) {
-        //把所有的数据改为0
+    public CommonResponse replace(LyqDate lyqDate) {
+        String ids = lyqDate.getValue();
+        LyqDate date_num = lyqDate.selectOne(new QueryWrapper<LyqDate>().eq("date_num", lyqDate.getDateNum()));
+        if (CommonUtils.isNotEmpty(date_num)) {
+            return CommonResponse.fail("期号重复了！！！");
+        }
+        //log.info(lyqDate.toString());
+        //把所有的数据改为0 其他的++
         Integer toZore = lyqTableService.updateToZore(ids.trim());
+        lyqDate.insert();
         return CommonResponse.success(toZore);
     }
 
+    @ResponseBody
+    @RequestMapping(value = "/replace/list")
+    public Map<String, Object> replacelist(Integer page, Integer rows) {
+        IPage<LyqDate> pages = lyqDateService.page(new Page<LyqDate>(page, rows),
+                new QueryWrapper<LyqDate>().orderByDesc("date_num"));
+        map.clear();
+        map.put("rows", pages.getRecords());
+        map.put("total", pages.getTotal());
+        return map;
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/copy/list")
+    public Map<String, Object> copylist(Integer page) {
+        List<LyqTable> list = lyqTableService.list(new QueryWrapper<LyqTable>()
+                .eq("lyq_group", page - 1).orderByAsc("seq"));
+        int count = lyqTableService.count();
+        map.clear();
+        map.put("rows", list);
+        map.put("total", count);
+        return map;
+    }
 
     /**
      * 初始化数据
@@ -239,22 +339,32 @@ public class ATotalController {
     @RequestMapping(value = "/init")
     public CommonResponse init() {
         //获取3000条数据
+        long startTime1 = System.currentTimeMillis();
         boolean b = initInsert();
         if (!b) {
             return CommonResponse.fail("插入失败");
         }
-        return CommonResponse.success();
+        long endTime1 = System.currentTimeMillis();
+        log.info("初始化数据库耗时："+(endTime1-startTime1));
+        return CommonResponse.success((endTime1-startTime1)/1000);
     }
 
     public boolean initInsert() {
         //删除表中的所有数据
         boolean remove = lyqTableService.remove(null);
         //添加第0-3000组
-        List<LyqTable> list = new LinkedList<>();
+        //List<LyqTable> list = new LinkedList<>();
         for (int i = 0; i < groupInt; i++) {
-            list.addAll(getInit3000(i));
+            //long startTime = System.currentTimeMillis();
+            //list.addAll(getInit3000(i));
+            lyqTableService.saveBatchByMyself(getInit3000(i));
+            //long endTime = System.currentTimeMillis();
+            //log.info("初始化数据库耗时："+(endTime-startTime));
         }
-        lyqTableService.saveBatch(list);
+
+        //lyqTableService.saveBatch(list);
+        //lyqTableService.saveBatchByMyself(list);
+
         return remove;
     }
 
@@ -271,6 +381,7 @@ public class ATotalController {
         log.info("第" + group + "组");
         Random random = new Random();
         List<LyqTable> list = new LinkedList<>();
+
         for (int i = 0; i < groupRow; i++) {
             LyqTable lyqTable = new LyqTable();
             lyqTable.setSeq(i + 1);
@@ -283,13 +394,84 @@ public class ATotalController {
         return list;
     }
 
-    private static Integer groupInt = 31; //多少组  3001
+    @ResponseBody
+    @RequestMapping(value = "/donwloadTem")
+    public CommonResponse donwloadTem(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        log.info("i come in");
+        //操作list进行下载  日期号  组  key value
+        HSSFWorkbook workbook = new HSSFWorkbook();//1.在内存中操作excel文件
+        HSSFSheet sheet = workbook.createSheet();//2.创建工作谱
+        sheet.setColumnWidth(0, 1440 * 3);
+        sheet.setColumnWidth(1, 720);
+        sheet.setColumnWidth(2, 720);
+        sheet.setColumnWidth(3, 720);
+        sheet.setColumnWidth(4, 720);
+        sheet.setColumnWidth(5, 720);
+        sheet.setColumnWidth(6, 720);
+        sheet.setColumnWidth(7, 720);
+        sheet.setColumnWidth(8, 720);
+        sheet.setColumnWidth(9, 720);
+        sheet.setColumnWidth(10, 720);
+        sheet.setColumnWidth(11, 1440 * 3);
+        sheet.setColumnWidth(12, 1440 * 3);
+        HSSFRow row = sheet.createRow(0);
+        row.createCell(0).setCellValue("期号");
+        row.createCell(1).setCellValue("0");
+        row.createCell(2).setCellValue("1");
+        row.createCell(3).setCellValue("2");
+        row.createCell(4).setCellValue("3");
+        row.createCell(5).setCellValue("4");
+        row.createCell(6).setCellValue("5");
+        row.createCell(7).setCellValue("6");
+        row.createCell(8).setCellValue("7");
+        row.createCell(9).setCellValue("8");
+        row.createCell(10).setCellValue("9");
+        row.createCell(11).setCellValue("3000数之样式");
+        row.createCell(12).setCellValue("需要上传的3000数");
+        //赋值3000模板书数
+        List<Integer> anInt = get3000Int();
+        for (Integer num : anInt) {
+            int lastRowNum = sheet.getLastRowNum();//获取最后一行的行号
+            HSSFRow dataRow = sheet.createRow(lastRowNum + 1);
+            dataRow.createCell(11).setCellValue(num);
+        }
+        //模板日期
+        HSSFRow row1 = sheet.getRow(1);
+        SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+        Calendar cal = Calendar.getInstance();
+        int year = cal.get(Calendar.YEAR);
+        int mon = cal.get(Calendar.MONTH) + 1;
+        int day = cal.get(Calendar.YEAR);
+        String format1 = "" + year +"" + mon + "" +day;
+        row1.createCell(0).setCellValue(format.format(new Date()) + "01");
+        row1.createCell(2).setCellValue(1);
+        row1.createCell(3).setCellValue(2);
+        row1.createCell(4).setCellValue(3);
+        //5.创建文件名
+        String fileName = "上传模板.xls";
+        //6.获取输出流对象
+        response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "utf-8"));
+        response.setContentType("multipart/form-data");
+        //设置请求头
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+        return CommonResponse.success();
+    }
 
-    private static Integer groupRow = 30; //多少条数据 3000
+    private static Integer groupInt = 3001; //多少组  3001
 
-    private static Integer groupNum = 13; //多少组在分一组
+    private static Integer groupRow = 3000; //多少条数据 3000
+
+    private static Integer groupNum = 21; //多少组在分一组
 
     @Autowired
     private LyqTableService lyqTableService;
+
+    @Autowired
+    private LyqDateService lyqDateService;
+
+    private static Map<String, Object> map = new HashMap<>();
+
+    private static Map<String, Object> intByFile = new HashMap<>();
 
 }

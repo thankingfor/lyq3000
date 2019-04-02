@@ -35,4 +35,22 @@
         </foreach>
     </update>
     
+    <!--void saveBatchByMyself(List<LyqTable> list);-->
+    <!--<insert id="saveBatchByMyself">-->
+        <!--INSERT INTO `lyq_table`-->
+         <!--(id,seq,lyq_group,lyq_key,lyq_value,lyq_seq)-->
+        <!--VALUES-->
+        <!--<foreach collection="list"  item="item" separator=","  >-->
+            <!--(#{item.id},#{item.seq},#{item.lyqGroup},#{item.lyqKey},#{item.lyqValue},#{item.lyqSeq})-->
+        <!--</foreach>-->
+    <!--</insert>-->
+
+    <insert id="saveBatchByMyself">
+        INSERT INTO `lyq_table`
+        (seq,lyq_group,lyq_key,lyq_value,lyq_seq)
+        VALUES
+        <foreach collection="list"  item="item" separator=","  >
+            (#{item.seq},#{item.lyqGroup},#{item.lyqKey},#{item.lyqValue},#{item.lyqSeq})
+        </foreach>
+    </insert>
 </mapper>
