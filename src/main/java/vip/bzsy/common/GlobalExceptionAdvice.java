@@ -26,5 +26,11 @@ public class GlobalExceptionAdvice {
         return response;
     }
 
-
+    @ExceptionHandler(value = DataCheckException.class)
+    public CommonResponse handlerDataCheckException(HttpServletRequest req,
+                                                 CommonException ex) {
+        CommonResponse response = new CommonResponse(CommonStatus.EXCEPTION);
+        response.setMsg("请从新加载数据或者初始化数据");
+        return response;
+    }
 }

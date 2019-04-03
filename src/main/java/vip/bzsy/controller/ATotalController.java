@@ -479,9 +479,9 @@ public class ATotalController {
         log.info(value+(end-start));
     }
 
-    private static Integer groupInt = 3001; //多少组  3001
+    private static Integer groupInt = 301; //多少组  3001
 
-    private static Integer groupRow = 3000; //多少条数据 3000
+    private static Integer groupRow = 300; //多少条数据 3000
 
     private static Integer groupNum = 21; //多少组在分一组
 

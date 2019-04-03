@@ -23,7 +23,7 @@
         })
 
         /**
-         *	初始化fileinput控件（第一次初始化）
+         *    初始化fileinput控件（第一次初始化）
          * @param ctrlName id
          * @param uploadUrl 路径
          * @returns
@@ -32,18 +32,18 @@
             var control = $('#' + ctrlName);
             control.fileinput({
                 language: 'zh', //设置语言
-                allowedFileExtensions : ['xls', 'xlsx'],//接收的文件后缀
+                allowedFileExtensions: ['xls', 'xlsx'],//接收的文件后缀
                 showUpload: false, //是否显示上传按钮
                 showCaption: false,//是否显示标题
                 browseClass: "btn btn-primary", //按钮样式
-                showPreview :false, //是否显示预览
+                showPreview: false, //是否显示预览
                 previewFileIcon: "<i class='glyphicon glyphicon-king'></i>",
             });
         }
 
         function table1show() {
             $('#table1').bootstrapTable({
-                url: '[[@{/replace/list}]]',
+                url: '[[@{/bt/replace/list}]]',
                 method: 'get',
                 dataType: 'json',
                 contentType: "application/x-www-form-urlencoded",
@@ -53,8 +53,8 @@
                 clickToSelect: true,
                 sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
                 pageNumber: 1,                       //初始化加载第一页，默认第一页
-                pageSize: 10,                       //每页的记录行数（*）
-                pageList: [10, 20, 30],        //可供选择的每页的行数（*）
+                pageSize: 5,                       //每页的记录行数（*）
+                pageList: [5, 10, 20, 30],        //可供选择的每页的行数（*）
                 queryParams: function (params) {
                     return {
                         page: this.pageNumber,
@@ -87,7 +87,7 @@
 
         function table2show() {
             $('#table2').bootstrapTable({
-                url: '[[@{/copy/list}]]',
+                url: '[[@{/bt/copy/list}]]',
                 method: 'get',
                 dataType: 'json',
                 contentType: "application/x-www-form-urlencoded",
@@ -98,7 +98,7 @@
                 sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
                 pageNumber: 1,                       //初始化加载第一页，默认第一页
                 pageSize: 3000,                       //每页的记录行数（*）
-                paginationVAlign:"top",
+                paginationVAlign: "top",
                 queryParams: function (params) {
                     return {
                         page: this.pageNumber,
@@ -140,7 +140,7 @@
                     field: 'lyqSeq',
                     align: 'center',
                     valign: 'middle',
-                    width:70
+                    width: 70
                 }]
             })
         }
@@ -149,10 +149,45 @@
             $.ajax({
                 type: "get",
                 dataType: "json",
-                url: "[[@{/init}]]",
+                url: "[[@{/bt/init/data}]]",
                 async: false,//异步  true 同步
                 success: function (result) {
-                    alert("成功:一共执行了900W条数据，耗时了"+result.data+"秒")
+                    $('#table1').bootstrapTable("refresh");
+                    $('#table2').bootstrapTable("refresh");
+                }, error: function (result) {
+                    alert("出错")
+                }
+            })
+        }
+
+        function initTable() {
+            $.ajax({
+                type: "get",
+                dataType: "json",
+                url: "[[@{/bt/init/table}]]",
+                async: false,//异步  true 同步
+                success: function (result) {
+                    if (result.code==0){
+                        alert(result.msg)
+                    } else if(result.code==1){
+                        $('#table1').bootstrapTable("refresh");
+                        $('#table2').bootstrapTable("refresh");
+                        alert(result.data)
+                    }
+                }, error: function (result) {
+                    alert("出错")
+                }
+            })
+        }
+
+        function insertTable() {
+            $.ajax({
+                type: "get",
+                dataType: "json",
+                url: "[[@{/bt/insert/table}]]",
+                async: false,//异步  true 同步
+                success: function (result) {
+                    alert("成功:一共执行了900W条数据，耗时了" + result.data + "秒")
                 }, error: function (result) {
                     alert("出错")
                 }
@@ -163,15 +198,15 @@
             $.ajax({
                 type: "get",
                 dataType: "json",
-                url: "[[@{/replace}]]",
+                url: "[[@{/bt/replace}]]",
                 async: false,//异步  true 同步
                 data: $('#addFrom1').serialize(),
                 success: function (result) {
                     console.log(result)
                     console.log(result.code)
                     if (result.code == 1) {
-                        alert("成功");
                         $('#table1').bootstrapTable("refresh");
+                        $('#table2').bootstrapTable("refresh");
                     } else {
                         alert(result.msg);
                     }
@@ -182,25 +217,25 @@
         }
 
         function donwloadTem() {
-            window.location.href = "[[@{/donwloadTem}]]";
+            window.location.href = "[[@{/bt/donwloadTem}]]";
         }
 
         function copyUpload() {
             var file = $('#uploadFile')[0];
             var formData = new FormData();
-            formData.append('file',file.files[0]);
+            formData.append('file', file.files[0]);
             $.ajax({
                 type: "post",
                 dataType: "json",
-                url: "[[@{/upload}]]",
+                url: "[[@{/bt/upload}]]",
                 async: false,//异步  true 同步
                 cache: false,//缓存 false的话会在url后面加一个时间缀，让它跑到服务器获取结果。
                 contentType: false,//上传的时候必须要
                 processData: false,
                 data: formData,
                 success: function (result) {
-                    if (result.code==1){
-                        window.location.href = "[[@{/copy}]]";
+                    if (result.code == 1) {
+                        window.location.href = "[[@{/bt/copy}]]";
                     } else {
                         alert(result.msg)
                     }
@@ -208,6 +243,17 @@
                 error: function () {
                     alert("上传失败")
                 },
+            })
+        }
+
+        function lookData() {
+            $.ajax({
+                type: "get",
+                dataType: "json",
+                url: "[[@{/bt/printData}]]",
+                success: function (result) {
+                }, error: function (result) {
+                }
             })
         }
     </script>
@@ -223,11 +269,19 @@
     <div class="col-md-2">
         <div class="list-group">
             <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
-                    data-target="#initModel">初始化数据库
+                    data-target="#initModel">从数据读取
+            </button>
+            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
+                    data-target="#initDataModel">初始化内存
             </button>
             <button type="button" class="btn btn-success m-2 p-2" onclick="donwloadTem()">下载上传模板</button>
             <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
-                    data-target="#uploadModal">上传3000行数字</button>
+                    data-target="#uploadModal">上传3000行数字
+            </button>
+            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
+                    data-target="#insertDataModel">保存数据
+            </button>
+            <!--<button type="button" class="btn btn-success m-2 p-2" onclick="lookData()">控制台查看数据</button>-->
         </div>
     </div>
     <div class="col-md-8">
@@ -259,11 +313,45 @@
                     <span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-                <h3 style="color: #bd2130">你确定初始化索引库么？此方法不可逆</h3>
+                <h3 style="color: #bd2130">你确定初始化内存么(从数据库中读取内容)？此方法不可逆(保存到数据库需要很久，请耐心等待，不要随意关闭浏览器)</h3>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="initTable()">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="initDataModel" tabindex="-1" role="dialog" aria-labelledby="initDataModelLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <h3 style="color: #bd2130">你确定初始化内存么？此方法不可逆</h3>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
                 <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="initData()">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="insertDataModel" tabindex="-1" role="dialog" aria-labelledby="insertDataModelLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <h3 style="color: #bd2130">你确定要把数据保存到数据库中去么？此方法不可逆(保存到数据库需要6分钟，请耐心等待，不要随意关闭浏览器)</h3>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="insertTable()">提交</button>
             </div>
         </div>
     </div>
@@ -287,15 +375,16 @@
         </div>
     </div>
 </div>
-<div  class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel">
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
                 <form id="selectPicForm">
-                    <input type="file" id="uploadFile" name="uploadFile" >
+                    <input type="file" id="uploadFile" name="uploadFile">
                 </form>
             </div>
             <div class="modal-footer">

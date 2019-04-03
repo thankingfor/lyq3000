@@ -58,6 +58,5 @@
     <select id="listByGroupOrderByAsc" resultType="vip.bzsy.model.LyqTable">
         SELECT * FROM `lyq_table`
         WHERE `lyq_group` = #{gruop}
-        ORDER BY seq ASC
     </select>
 </mapper>
