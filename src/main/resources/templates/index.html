@@ -164,7 +164,7 @@
             $.ajax({
                 type: "get",
                 dataType: "json",
-                url: "[[@{/bt/init/table}]]",
+                url: "[[@{/bt/get/obj}]]",
                 async: false,//异步  true 同步
                 success: function (result) {
                     if (result.code==0){
@@ -184,7 +184,7 @@
             $.ajax({
                 type: "get",
                 dataType: "json",
-                url: "[[@{/bt/insert/table}]]",
+                url: "[[@{/bt/down/obj}]]",
                 async: false,//异步  true 同步
                 success: function (result) {
                     alert("成功:一共执行了900W条数据，耗时了" + result.data + "秒")
@@ -313,7 +313,7 @@
                     <span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-                <h3 style="color: #bd2130">你确定初始化内存么(从数据库中读取内容)？此方法不可逆(保存到数据库需要很久，请耐心等待，不要随意关闭浏览器)</h3>
+                <h3 style="color: #bd2130">你确定初始化内存么(从数据库中读取内容)？此方法不可逆(保存到数据库需3分钟左右，请耐心等待，不要随意关闭浏览器)</h3>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
@@ -347,7 +347,7 @@
                     <span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-                <h3 style="color: #bd2130">你确定要把数据保存到数据库中去么？此方法不可逆(保存到数据库需要6分钟，请耐心等待，不要随意关闭浏览器)</h3>
+                <h3 style="color: #bd2130">你确定要把数据保存到数据库中去么？此方法不可逆(保存到数据库需要2分钟，请耐心等待，不要随意关闭浏览器)</h3>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>

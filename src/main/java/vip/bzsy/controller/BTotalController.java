@@ -25,7 +25,7 @@ import vip.bzsy.service.LyqTableService;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -56,7 +56,7 @@ public class BTotalController {
          */
         long time1 = System.currentTimeMillis();
         List<Integer> anInt = (List<Integer>) intByFile.get("list");
-        String dateNum =(String)intByFile.get("dateNum");
+        String dateNum = (String) intByFile.get("dateNum");
         List<LyqTable> list0 = copyStart(anInt);//获取第0组并且按照排序
         List<LyqTable> listMax = new LinkedList<>();//存放最大值
         //开始修改0-3000组的key
@@ -66,7 +66,7 @@ public class BTotalController {
             list0 = tables;//把list0改成下一组的方便循环
         }
         long time2 = System.currentTimeMillis();
-        print("第一个任务耗时：",time1,time2);
+        print("第一个任务耗时：", time1, time2);
         /**
          * 第二个任务 700个
          * 按照lyq_seq进行排序
@@ -77,7 +77,7 @@ public class BTotalController {
         Integer groupType2 = 1;
         for (int group = 1; group < groupInt; group++) {
             List<LyqTable> listgroup = dataMap.get(group);
-            listgroup.sort((x,y)->x.getLyqSeq()-y.getLyqSeq());
+            listgroup.sort((x, y) -> x.getLyqSeq() - y.getLyqSeq());
             listMap.put(group, listgroup);
             if (group % groupNum == 0) {
                 List<Type2Vo> type2VoList = sortType2(listMap, groupType2);
@@ -89,52 +89,19 @@ public class BTotalController {
         //type2VoListType最终排序
         type2VoListType.sort((x, y) -> y.getValue() - x.getValue());
         //进行下载操作
-        copyDownMax(response, listMax, type2VoListType,dateNum);
-        /**
-         * 下载操作  防止报错
-         */
-//        HSSFWorkbook workbook = new HSSFWorkbook();//1.在内存中操作excel文件
-//        HSSFSheet sheet = workbook.createSheet();//2.创建工作谱
-//        HSSFRow row = sheet.createRow(0);
-//        row.createCell(0).setCellValue("组号");
-//        row.createCell(1).setCellValue("key");
-//        row.createCell(2).setCellValue("value");
-//        row.createCell(4).setCellValue("组号");
-//        row.createCell(5).setCellValue("序列");
-//        row.createCell(6).setCellValue("合计");
-//        //4.遍历数据,创建数据行
-//        for (LyqTable table : listMax) {
-//            int lastRowNum = sheet.getLastRowNum();//获取最后一行的行号
-//            HSSFRow dataRow = sheet.createRow(lastRowNum + 1);
-//            dataRow.createCell(0).setCellValue("第" + table.getLyqGroup() + "组");
-//            dataRow.createCell(1).setCellValue(table.getLyqKey());
-//            dataRow.createCell(2).setCellValue(table.getLyqValue());
-//        }
-//        for (int i = 0; i < type2VoListType.size(); i++) {
-//            HSSFRow dataRow = sheet.getRow(i + 1);
-//            dataRow.createCell(4).setCellValue("第" + type2VoListType.get(i).getGroup() + "组");
-//            dataRow.createCell(5).setCellValue(type2VoListType.get(i).getSeq());
-//            dataRow.createCell(6).setCellValue(type2VoListType.get(i).getValue());
-//        }
-//        //5.创建文件名
-//        String fileName = dateNum+".xls";
-//        //6.获取输出流对象
-//        response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "utf-8"));
-//        response.setContentType("multipart/form-data");
-//        //设置请求头
-//        ServletOutputStream outputStream = response.getOutputStream();
-//        workbook.write(outputStream);
+        copyDownMax(response, listMax, type2VoListType, dateNum);
         /**
          * 结果统计
          */
         long endTime2 = System.currentTimeMillis();
         long time4 = System.currentTimeMillis();
-        print("第二个任务耗时：",time3,time4);
-        print("一共耗时：",time1,time4);
+        print("第二个任务耗时：", time3, time4);
+        print("一共耗时：", time1, time4);
     }
 
     /**
      * 9.4下载文档
+     *
      * @param response
      * @param listMax
      * @param type2VoListType
@@ -142,7 +109,7 @@ public class BTotalController {
      * @throws Exception
      */
     public void copyDownMax(HttpServletResponse response, List<LyqTable> listMax,
-                            List<Type2Vo> type2VoListType,String dateNum) throws Exception {
+                            List<Type2Vo> type2VoListType, String dateNum) throws Exception {
         //操作list进行下载  日期号  组  key value
         HSSFWorkbook workbook = new HSSFWorkbook();//1.在内存中操作excel文件
         HSSFSheet sheet = workbook.createSheet();//2.创建工作谱
@@ -168,7 +135,7 @@ public class BTotalController {
             dataRow.createCell(6).setCellValue(type2VoListType.get(i).getValue());
         }
         //5.创建文件名
-        String fileName = dateNum+".xls";
+        String fileName = dateNum + ".xls";
         //6.获取输出流对象
         response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "utf-8"));
         response.setContentType("multipart/form-data");
@@ -179,6 +146,7 @@ public class BTotalController {
 
     /**
      * 9.3返回前五条数据
+     *
      * @param listMap
      * @param group
      * @return
@@ -203,7 +171,7 @@ public class BTotalController {
          * 根据value排序
          */
         List<Map.Entry<Integer, Integer>> lists = new ArrayList<>(map.entrySet());
-        lists.sort((o1,o2)->o2.getValue() - o1.getValue());
+        lists.sort((o1, o2) -> o2.getValue() - o1.getValue());
         /**
          * 获取前5条数据
          */
@@ -229,9 +197,9 @@ public class BTotalController {
         long time1 = System.currentTimeMillis();
         //1.获取数据并且按照seq排序
         List<LyqTable> listgroupbySeq = dataMap.get(gruop);
-        listgroupbySeq.sort((x,y)->x.getSeq()-y.getSeq());
+        listgroupbySeq.sort((x, y) -> x.getSeq() - y.getSeq());
         long time2 = System.currentTimeMillis();
-        print("查询一组数据,并排序",time1,time2);
+        print("查询一组数据,并排序", time1, time2);
         //2.把key 复给 下一组 带上0组的seq
         for (int i = 0; i < groupRow; i++) {
             if (listgroupbySeq.get(i).getSeq() != i + 1) {
@@ -241,11 +209,11 @@ public class BTotalController {
             listgroupbySeq.get(i).setLyqSeq(copyList.get(i).getLyqSeq()); //把第零组的序列付给每一组
         }
         long time3 = System.currentTimeMillis();
-        print("赋值",time2,time3);
+        print("赋值", time2, time3);
         //3.逆向排序
-        listgroupbySeq.sort((x,y)->y.getLyqValue()-x.getLyqValue());
+        listgroupbySeq.sort((x, y) -> y.getLyqValue() - x.getLyqValue());
         long time4 = System.currentTimeMillis();
-        print("再次查询一组用时",time1,time4);
+        print("再次查询一组用时", time1, time4);
         return listgroupbySeq;
     }
 
@@ -254,7 +222,7 @@ public class BTotalController {
      */
     public List<LyqTable> copyStart(List<Integer> anInt) {
         List<LyqTable> listgroupbySeq = dataMap.get(0);
-        listgroupbySeq.sort((x,y)->x.getSeq()-y.getSeq());
+        listgroupbySeq.sort((x, y) -> x.getSeq() - y.getSeq());
         //模拟Excel获取3000个数据 并且赋值
         for (int i = 0; i < groupRow; i++) {
             if (listgroupbySeq.get(i).getSeq() != i + 1) {
@@ -263,12 +231,13 @@ public class BTotalController {
             listgroupbySeq.get(i).setLyqKey(anInt.get(i)); //把上一组的key给这一组
         }
         //逆向排序
-        listgroupbySeq.sort((x,y)->y.getLyqValue()-x.getLyqValue());
+        listgroupbySeq.sort((x, y) -> y.getLyqValue() - x.getLyqValue());
         return listgroupbySeq;
     }
 
     /**
      * 8.上传数据
+     *
      * @param file
      * @return
      * @throws IOException
@@ -283,10 +252,10 @@ public class BTotalController {
         for (int i = 1; i <= 10; i++) {
             String cellStringValue = CommonUtils.getCellStringValue(row.getCell(i)).trim();
             log.info(cellStringValue);
-            if (CommonUtils.isNotEmpty(cellStringValue)){
-                Integer num = Integer.valueOf(cellStringValue.substring(0,1));
-                if (ids=="")
-                    ids = num+"";
+            if (CommonUtils.isNotEmpty(cellStringValue)) {
+                Integer num = Integer.valueOf(cellStringValue.substring(0, 1));
+                if (ids == "")
+                    ids = num + "";
                 else
                     ids = ids + "," + num;
             }
@@ -297,7 +266,7 @@ public class BTotalController {
         LyqDate lyqDate = new LyqDate()
                 .setDateNum(dateNum)
                 .setValue(ids);
-        log.info("上传数据之日期对象"+lyqDate.toString());
+        log.info("上传数据之日期对象" + lyqDate.toString());
         CommonResponse replace = replace(lyqDate);
         if (replace.getCode() == 0)
             return CommonResponse.fail("日期号码重复了");
@@ -305,16 +274,16 @@ public class BTotalController {
         for (int i = 0; i < groupRow; i++) {
             HSSFCell cell = sheet.getRow(i + 1).getCell(12);
             String cellStringValue = CommonUtils.getCellStringValue(cell);
-            if (CommonUtils.isNotEmpty(cellStringValue)){
-                cellStringValue = cellStringValue.substring(0,cellStringValue.length()-2);
+            if (CommonUtils.isNotEmpty(cellStringValue)) {
+                cellStringValue = cellStringValue.substring(0, cellStringValue.length() - 2);
                 listant.add(Integer.valueOf(cellStringValue));
             }
         }
-        log.info("上传数据之list集合"+listant.toString());
+        log.info("上传数据之list集合" + listant.toString());
         intByFile.clear();
         intByFile.put("dateNum", lyqDate.getDateNum());
         intByFile.put("list", listant);
-        log.info("解析完毕上传的数据"+intByFile.toString());
+        log.info("解析完毕上传的数据" + intByFile.toString());
         return CommonResponse.success();
     }
 
@@ -328,7 +297,7 @@ public class BTotalController {
     @ResponseBody
     @RequestMapping(value = "/replace")
     public CommonResponse replace(LyqDate lyqDate) throws DataCheckException {
-        if (checkMap().getCode()==0){
+        if (checkMap().getCode() == 0) {
             throw new DataCheckException();
         }
         String ids = lyqDate.getValue();
@@ -351,7 +320,7 @@ public class BTotalController {
         }
         long time1 = System.currentTimeMillis();
         Iterator<Integer> iterator = dataMap.keySet().iterator();
-        iterator.forEachRemaining(group->{
+        iterator.forEachRemaining(group -> {
             List<LyqTable> lyqTables = dataMap.get(group);
             List<LyqTable> collect = lyqTables.stream()
                     .map(table -> {
@@ -361,15 +330,16 @@ public class BTotalController {
                             table.setLyqValue(table.getLyqValue() + 1);
                         return table;
                     }).collect(Collectors.toList());
-            dataMap.put(group,collect);
+            dataMap.put(group, collect);
         });
         //Integer row1 = lyqTableMapper.updateToZore(ids);
         long time2 = System.currentTimeMillis();
-        print("更新操作（归零和加一）用时：",time1,time2);
+        print("更新操作（归零和加一）用时：", time1, time2);
     }
 
     /**
      * 3.查询日期list
+     *
      * @param page
      * @param rows
      * @return
@@ -387,6 +357,7 @@ public class BTotalController {
 
     /**
      * 4.查询内存中的dataMap
+     *
      * @param page
      * @param rows
      * @return
@@ -394,44 +365,46 @@ public class BTotalController {
     @ResponseBody
     @RequestMapping(value = "/copy/list")
     public Map<String, Object> copylist(Integer page) throws DataCheckException {
-        if (checkMap().getCode()==0){
+        if (checkMap().getCode() == 0) {
             throw new DataCheckException();
         }
         List<LyqTable> lyqTables = dataMap.get(page - 1);
-        lyqTables.sort((x,y)->y.getLyqValue()-x.getLyqValue());
+        lyqTables.sort((x, y) -> y.getLyqValue() - x.getLyqValue());
         map.clear();
         map.put("rows", lyqTables);
-        map.put("total", groupInt*groupRow);
+        map.put("total", groupInt * groupRow);
         return map;
     }
 
     /**
      * 1.把内内存的数据存入数据库
+     *
      * @return
      */
     @ResponseBody
     @RequestMapping(value = "/insert/table")
     public CommonResponse init() throws DataCheckException {
-        if (checkMap().getCode()==0){
+        if (checkMap().getCode() == 0) {
             throw new DataCheckException();
         }
         long time0 = System.currentTimeMillis();
         boolean remove = lyqTableService.remove(null);
         long time1 = System.currentTimeMillis();
-        print("删除数据内容耗时：",time0,time1);
+        print("删除数据内容耗时：", time0, time1);
         for (int i = 0; i < groupInt; i++) {
             long startTime = System.currentTimeMillis();
             lyqTableService.saveBatchByMyself(dataMap.get(i));
             long endTime = System.currentTimeMillis();
-            print("第"+i+"组添加到数据库耗时：",startTime,endTime);
+            print("第" + i + "组添加到数据库耗时：", startTime, endTime);
         }
         long time2 = System.currentTimeMillis();
         long timespend = print("初始化数据库耗时：", time1, time2);
-        return CommonResponse.success(timespend/1000);
+        return CommonResponse.success(timespend / 1000);
     }
 
     /**
      * 2.初始化内存数据
+     *
      * @return
      */
     @ResponseBody
@@ -441,9 +414,9 @@ public class BTotalController {
         long time1 = System.currentTimeMillis();
         for (int i = 0; i < groupInt; i++) {
             List<LyqTable> init3000 = getInit3000(i);
-            dataMap.put(i,init3000);
+            dataMap.put(i, init3000);
         }
-        log.info("dataMap的大小"+dataMap.keySet().toString());
+        log.info("dataMap的大小" + dataMap.keySet().toString());
         long time2 = System.currentTimeMillis();
         print("添加到内存总耗时：", time1, time2);
         return CommonResponse.success();
@@ -451,6 +424,7 @@ public class BTotalController {
 
     /**
      * 3.从数据库添加数据到内存
+     *
      * @return
      */
     @ResponseBody
@@ -465,14 +439,14 @@ public class BTotalController {
         for (int i = 0; i < groupInt; i++) {
             long times = System.currentTimeMillis();
             List<LyqTable> lyqTables = lyqTableService.listByGroupOrderByAsc(i);
-            dataMap.put(i,lyqTables);
+            dataMap.put(i, lyqTables);
             long timee = System.currentTimeMillis();
-            print("添加到内存第"+i+"总耗时：", times, timee);
+            print("添加到内存第" + i + "总耗时：", times, timee);
         }
-        log.info("dataMap的大小"+dataMap.size());
+        log.info("dataMap的大小" + dataMap.size());
         long time3 = System.currentTimeMillis();
         print("添加到内存总耗时：", time1, time3);
-        return CommonResponse.success("一共用时"+(time3-time1)/1000+"秒");
+        return CommonResponse.success("一共用时" + (time3 - time1) / 1000 + "秒");
     }
 
     public List<LyqTable> getInit3000(Integer group) {
@@ -496,7 +470,7 @@ public class BTotalController {
     @ResponseBody
     @RequestMapping(value = "/check")
     private CommonResponse checkMap() {
-        if (dataMap.size() == groupInt){
+        if (dataMap.size() == groupInt) {
             return CommonResponse.success("数据合法");
         }
         return CommonResponse.fail("数据不合法");
@@ -504,6 +478,7 @@ public class BTotalController {
 
     /**
      * 6.加载模板
+     *
      * @param request
      * @param response
      * @return
@@ -567,6 +542,43 @@ public class BTotalController {
         return CommonResponse.success();
     }
 
+
+    @ResponseBody
+    @RequestMapping(value = "/down/obj")
+    public CommonResponse dataMapdonwloadobj(HttpServletRequest request, HttpServletResponse response) {
+        long time3 = System.currentTimeMillis();
+        //5.创建文件名
+        String fileName = "内存数据.txt";
+        //设置请求头
+        try (OutputStream outputStream = new FileOutputStream(new File("C:/" + fileName))
+             ; ObjectOutputStream oos = new ObjectOutputStream(outputStream)) {
+            oos.writeObject(dataMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        long time4 = System.currentTimeMillis();
+        print("一共消耗了", time3, time4);
+        return CommonResponse.success();
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/get/obj")
+    public CommonResponse getobj(HttpServletRequest request, HttpServletResponse response){
+        long time3 = System.currentTimeMillis();
+        //5.创建文件名
+        String fileName = "内存数据.txt";
+
+        //设置请求头
+        try (ObjectInputStream oos =new ObjectInputStream(new FileInputStream("C:/" + fileName));) {
+            dataMap = (Map<Integer, List<LyqTable>>) oos.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        long time4 = System.currentTimeMillis();
+        print("一共消耗了", time3, time4);
+        return CommonResponse.success();
+    }
+
     public List<Integer> get3000Int() {
         Random random = new Random();
         List<Integer> list = new LinkedList<>();
@@ -576,21 +588,21 @@ public class BTotalController {
         return list;
     }
 
-    public static long print(String value,Long start,Long end){
-        log.info(value+(end-start));
+    public static long print(String value, Long start, Long end) {
+        log.info(value + (end - start));
         return end - start;
     }
 
     @ResponseBody
     @RequestMapping("/printData")
-    public void printData(){
-        log.info("开始打印data数据 "+dataMap.size());
+    public void printData() {
+        log.info("开始打印data数据 " + dataMap.size());
         Iterator<Integer> iterator = dataMap.keySet().iterator();
-        iterator.forEachRemaining(key->log.info(dataMap.get(key).toString()));
+        iterator.forEachRemaining(key -> log.info(dataMap.get(key).toString()));
     }
 
     /**
-     *多少组  3001
+     * 多少组  3001
      */
     private static Integer groupInt = 3001;
     /**
@@ -599,7 +611,7 @@ public class BTotalController {
     private static Integer groupRow = 3000;
 
     /**
-     *多少组在分一组 21
+     * 多少组在分一组 21
      */
     private static Integer groupNum = 21;
 
