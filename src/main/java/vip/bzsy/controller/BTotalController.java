@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -194,12 +195,12 @@ public class BTotalController {
      * @return 这一组的list
      */
     public List<LyqTable> copySort(List<LyqTable> copyList, Integer gruop) {
-        long time1 = System.currentTimeMillis();
+        //long time1 = System.currentTimeMillis();
         //1.获取数据并且按照seq排序
         List<LyqTable> listgroupbySeq = dataMap.get(gruop);
         listgroupbySeq.sort((x, y) -> x.getSeq() - y.getSeq());
-        long time2 = System.currentTimeMillis();
-        print("查询一组数据,并排序", time1, time2);
+        //long time2 = System.currentTimeMillis();
+        //print("查询一组数据,并排序", time1, time2);
         //2.把key 复给 下一组 带上0组的seq
         for (int i = 0; i < groupRow; i++) {
             if (listgroupbySeq.get(i).getSeq() != i + 1) {
@@ -208,12 +209,12 @@ public class BTotalController {
             listgroupbySeq.get(i).setLyqKey(copyList.get(i).getLyqKey()); //把上一组的key给这一组
             listgroupbySeq.get(i).setLyqSeq(copyList.get(i).getLyqSeq()); //把第零组的序列付给每一组
         }
-        long time3 = System.currentTimeMillis();
-        print("赋值", time2, time3);
+        //long time3 = System.currentTimeMillis();
+        //print("赋值", time2, time3);
         //3.逆向排序
         listgroupbySeq.sort((x, y) -> y.getLyqValue() - x.getLyqValue());
-        long time4 = System.currentTimeMillis();
-        print("再次查询一组用时", time1, time4);
+        //long time4 = System.currentTimeMillis();
+        //print("再次查询一组用时", time1, time4);
         return listgroupbySeq;
     }
 
@@ -486,7 +487,7 @@ public class BTotalController {
      */
     @ResponseBody
     @RequestMapping(value = "/donwloadTem")
-    public CommonResponse donwloadTem(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void donwloadTem(HttpServletRequest request, HttpServletResponse response) throws IOException {
         //操作list进行下载  日期号  组  key value
         HSSFWorkbook workbook = new HSSFWorkbook();//1.在内存中操作excel文件
         HSSFSheet sheet = workbook.createSheet();//2.创建工作谱
@@ -539,7 +540,6 @@ public class BTotalController {
         //设置请求头
         ServletOutputStream outputStream = response.getOutputStream();
         workbook.write(outputStream);
-        return CommonResponse.success();
     }
 
 
@@ -547,10 +547,12 @@ public class BTotalController {
     @RequestMapping(value = "/down/obj")
     public CommonResponse dataMapdonwloadobj(HttpServletRequest request, HttpServletResponse response) {
         long time3 = System.currentTimeMillis();
-        //5.创建文件名
-        String fileName = "内存数据.txt";
+        File file = new File(outPath);
+        if (file.exists()){
+            file.delete();
+        }
         //设置请求头
-        try (OutputStream outputStream = new FileOutputStream(new File("C:/" + fileName))
+        try (OutputStream outputStream = new FileOutputStream(new File(outPath))
              ; ObjectOutputStream oos = new ObjectOutputStream(outputStream)) {
             oos.writeObject(dataMap);
         } catch (Exception e) {
@@ -558,25 +560,27 @@ public class BTotalController {
         }
         long time4 = System.currentTimeMillis();
         print("一共消耗了", time3, time4);
-        return CommonResponse.success();
+        return CommonResponse.success("一共消耗了"+(time4-time3)/1000+"秒");
     }
 
     @ResponseBody
     @RequestMapping(value = "/get/obj")
     public CommonResponse getobj(HttpServletRequest request, HttpServletResponse response){
+        dataMap.clear();
         long time3 = System.currentTimeMillis();
-        //5.创建文件名
-        String fileName = "内存数据.txt";
 
+        if (!new File(outPath).exists()){
+            return CommonResponse.fail("数据不存在！1.先初始化数据2.下载数据");
+        }
         //设置请求头
-        try (ObjectInputStream oos =new ObjectInputStream(new FileInputStream("C:/" + fileName));) {
+        try (ObjectInputStream oos =new ObjectInputStream(new FileInputStream(outPath));) {
             dataMap = (Map<Integer, List<LyqTable>>) oos.readObject();
         } catch (Exception e) {
             e.printStackTrace();
         }
         long time4 = System.currentTimeMillis();
         print("一共消耗了", time3, time4);
-        return CommonResponse.success();
+        return CommonResponse.success("一共用时" + (time4 - time3) / 1000 + "秒");
     }
 
     public List<Integer> get3000Int() {
@@ -626,4 +630,6 @@ public class BTotalController {
     private static Map<String, Object> map = new HashMap<>();
 
     private static Map<String, Object> intByFile = new HashMap<>();
+
+    private static String outPath = "D:/内存数据.txt";
 }
