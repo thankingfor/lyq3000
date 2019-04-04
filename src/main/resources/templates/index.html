@@ -187,7 +187,12 @@
                 url: "[[@{/bt/down/obj}]]",
                 async: false,//异步  true 同步
                 success: function (result) {
-                    alert("成功:一共执行了900W条数据，耗时了" + result.data + "秒")
+                    if (result.code==1){
+                        alert("成功:一共执行了900W条数据，耗时了" + result.data + "秒")
+                    }else if (result.code==0){
+                        alert(result.msg)
+                    }
+
                 }, error: function (result) {
                     alert("出错")
                 }

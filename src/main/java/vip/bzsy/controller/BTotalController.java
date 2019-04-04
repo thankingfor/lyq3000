@@ -547,6 +547,9 @@ public class BTotalController {
     @RequestMapping(value = "/down/obj")
     public CommonResponse dataMapdonwloadobj(HttpServletRequest request, HttpServletResponse response) {
         long time3 = System.currentTimeMillis();
+        if (checkMap().getCode() == 0) {
+            return CommonResponse.fail("内存不存在！先初始化数据 或者 读取系统文件");
+        }
         File file = new File(outPath);
         if (file.exists()){
             file.delete();
