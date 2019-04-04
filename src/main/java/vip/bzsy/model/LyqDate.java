@@ -1,13 +1,11 @@
 package vip.bzsy.model;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
-import com.baomidou.mybatisplus.annotation.TableId;
-import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+
+import java.io.Serializable;
 
 /**
  * <p>
@@ -21,11 +19,10 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @ToString
-public class LyqDate extends Model<LyqDate> {
+public class LyqDate implements  Serializable{
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
@@ -38,10 +35,5 @@ public class LyqDate extends Model<LyqDate> {
      */
     private String value;
 
-
-    @Override
-    protected Serializable pkVal() {
-        return this.id;
-    }
 
 }

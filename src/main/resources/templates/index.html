@@ -10,9 +10,11 @@
     <link rel="stylesheet" th:href="@{/css/fileinput.css}">
     <!--引入文件js-->
     <script th:src="@{/js/jquery-3.2.1.min.js}"></script>
+    <script th:src="@{/js/popper.min.js}"></script>
     <script th:src="@{/js/bootstrap.min.js}"></script>
     <script th:src="@{/js/bootstrap-table.js}"></script>
     <script th:src="@{/js/bootstrap-table-zh-CN.js}"></script>
+
     <script th:src="@{/js/fileinput.js}"></script>
     <script th:src="@{/js/fileinput-zh.js}"></script>
     <script type="text/javascript">
@@ -97,11 +99,13 @@
                 clickToSelect: true,
                 sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
                 pageNumber: 1,                       //初始化加载第一页，默认第一页
-                pageSize: 3000,                       //每页的记录行数（*）
+                pageSize: 100,                       //每页的记录行数（*）
+                pageList: [50,100, 300, 500,1000,2000,3000],        //可供选择的每页的行数（*）
                 paginationVAlign: "top",
                 queryParams: function (params) {
                     return {
                         page: this.pageNumber,
+                        rows: this.pageSize
                     };
                 }, columns: [{
                     checkbox: true
@@ -241,6 +245,8 @@
                 success: function (result) {
                     if (result.code == 1) {
                         window.location.href = "[[@{/bt/copy}]]";
+                        $('#table1').bootstrapTable("refresh");
+                        $('#table2').bootstrapTable("refresh");
                     } else {
                         alert(result.msg)
                     }

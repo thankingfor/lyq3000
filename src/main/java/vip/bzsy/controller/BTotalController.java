@@ -1,15 +1,12 @@
 package vip.bzsy.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,15 +16,12 @@ import vip.bzsy.common.DataCheckException;
 import vip.bzsy.model.LyqDate;
 import vip.bzsy.model.LyqTable;
 import vip.bzsy.model.Type2Vo;
-import vip.bzsy.service.LyqDateService;
-import vip.bzsy.service.LyqTableService;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
-import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,7 +35,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/bt")
 @SuppressWarnings("all")
 public class BTotalController {
-
 
     /**
      * 按钮二 获取3000个数据
@@ -302,13 +295,15 @@ public class BTotalController {
             throw new DataCheckException();
         }
         String ids = lyqDate.getValue();
-        LyqDate date_num = lyqDate.selectOne(new QueryWrapper<LyqDate>().eq("date_num", lyqDate.getDateNum()));
-        if (CommonUtils.isNotEmpty(date_num)) {
+        long count = lyqDateList.stream().filter(x -> x.getDateNum().equals(lyqDate.getDateNum())).count();
+        //LyqDate date_num = lyqDate.selectOne(new QueryWrapper<LyqDate>().eq("date_num", lyqDate.getDateNum()));
+        if (count > 0) {
             return CommonResponse.fail("期号重复了！！！");
         }
         //把所有的数据改为0 其他的++  然后把日期号存入数据库
         updateToZore(ids.trim());
-        lyqDate.insert();
+        lyqDateList.add(lyqDate);
+        //lyqDate.insert();
         return CommonResponse.success();
     }
 
@@ -348,11 +343,24 @@ public class BTotalController {
     @ResponseBody
     @RequestMapping(value = "/replace/list")
     public Map<String, Object> replacelist(Integer page, Integer rows) {
-        IPage<LyqDate> pages = lyqDateService.page(new Page<LyqDate>(page, rows),
-                new QueryWrapper<LyqDate>().orderByDesc("date_num"));
+        if (lyqDateList.size() == 0) {
+            log.info("内存没有数据，请添加数据...");
+            map.clear();
+            map.put("rows", null);
+            map.put("total", 0);
+            return map;
+        }
+        /**
+         * 流的排序分页操作
+         */
+        List<LyqDate> collect = lyqDateList.stream()
+                .sorted((x, y) -> y.getDateNum().compareTo(x.getDateNum()))
+                .skip((page - 1) * rows).limit(rows).parallel().collect(Collectors.toList());
+//        IPage<LyqDate> pages = lyqDateService.page(new Page<LyqDate>(page, rows),
+//                new QueryWrapper<LyqDate>().orderByDesc("date_num"));
         map.clear();
-        map.put("rows", pages.getRecords());
-        map.put("total", pages.getTotal());
+        map.put("rows", collect);
+        map.put("total", lyqDateList.size());
         return map;
     }
 
@@ -365,43 +373,23 @@ public class BTotalController {
      */
     @ResponseBody
     @RequestMapping(value = "/copy/list")
-    public Map<String, Object> copylist(Integer page) throws DataCheckException {
+    public Map<String, Object> copylist(Integer page, Integer rows) throws DataCheckException {
         if (checkMap().getCode() == 0) {
-            throw new DataCheckException();
+            log.info("内存没有数据，请添加数据...");
+            map.clear();
+            map.put("rows", null);
+            map.put("total", 0);
+            return map;
         }
         List<LyqTable> lyqTables = dataMap.get(page - 1);
-        lyqTables.sort((x, y) -> y.getLyqValue() - x.getLyqValue());
+        //lyqTables.sort((x, y) -> y.getLyqValue() - x.getLyqValue());
+        List<LyqTable> collect = lyqTables.stream().sorted((x, y) -> y.getLyqValue() - x.getLyqValue()).limit(rows).collect(Collectors.toList());
         map.clear();
-        map.put("rows", lyqTables);
-        map.put("total", groupInt * groupRow);
+        map.put("rows", collect);
+        map.put("total", dataMap.size() * rows);
         return map;
     }
 
-    /**
-     * 1.把内内存的数据存入数据库
-     *
-     * @return
-     */
-    @ResponseBody
-    @RequestMapping(value = "/insert/table")
-    public CommonResponse init() throws DataCheckException {
-        if (checkMap().getCode() == 0) {
-            throw new DataCheckException();
-        }
-        long time0 = System.currentTimeMillis();
-        boolean remove = lyqTableService.remove(null);
-        long time1 = System.currentTimeMillis();
-        print("删除数据内容耗时：", time0, time1);
-        for (int i = 0; i < groupInt; i++) {
-            long startTime = System.currentTimeMillis();
-            lyqTableService.saveBatchByMyself(dataMap.get(i));
-            long endTime = System.currentTimeMillis();
-            print("第" + i + "组添加到数据库耗时：", startTime, endTime);
-        }
-        long time2 = System.currentTimeMillis();
-        long timespend = print("初始化数据库耗时：", time1, time2);
-        return CommonResponse.success(timespend / 1000);
-    }
 
     /**
      * 2.初始化内存数据
@@ -423,32 +411,6 @@ public class BTotalController {
         return CommonResponse.success();
     }
 
-    /**
-     * 3.从数据库添加数据到内存
-     *
-     * @return
-     */
-    @ResponseBody
-    @RequestMapping(value = "/init/table")
-    public CommonResponse initTable() {
-        dataMap.clear();
-        long time1 = System.currentTimeMillis();
-//        LyqTable one = lyqTableService.getOne(null);
-//        if (CommonUtils.isEmpty(one)){
-//            return CommonResponse.fail("数据库没有数据，请1.初始化2.保存数据");
-//        }
-        for (int i = 0; i < groupInt; i++) {
-            long times = System.currentTimeMillis();
-            List<LyqTable> lyqTables = lyqTableService.listByGroupOrderByAsc(i);
-            dataMap.put(i, lyqTables);
-            long timee = System.currentTimeMillis();
-            print("添加到内存第" + i + "总耗时：", times, timee);
-        }
-        log.info("dataMap的大小" + dataMap.size());
-        long time3 = System.currentTimeMillis();
-        print("添加到内存总耗时：", time1, time3);
-        return CommonResponse.success("一共用时" + (time3 - time1) / 1000 + "秒");
-    }
 
     public List<LyqTable> getInit3000(Integer group) {
         Random random = new Random();
@@ -551,33 +513,54 @@ public class BTotalController {
             return CommonResponse.fail("内存不存在！先初始化数据 或者 读取系统文件");
         }
         File file = new File(outPath);
-        if (file.exists()){
+        File datefile = new File(dataoutPath);
+        if (file.exists()) {
             file.delete();
         }
+        if (datefile.exists()) {
+            datefile.delete();
+        }
         //设置请求头
+        try (OutputStream outputStream = new FileOutputStream(new File(dataoutPath))
+             ; ObjectOutputStream oos = new ObjectOutputStream(outputStream)) {
+            oos.writeObject(lyqDateList);
+            log.info("日期对象写入成功！！！");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         try (OutputStream outputStream = new FileOutputStream(new File(outPath))
              ; ObjectOutputStream oos = new ObjectOutputStream(outputStream)) {
             oos.writeObject(dataMap);
+            log.info("内存对象写入成功！！！");
         } catch (Exception e) {
             e.printStackTrace();
         }
         long time4 = System.currentTimeMillis();
         print("一共消耗了", time3, time4);
-        return CommonResponse.success("一共消耗了"+(time4-time3)/1000+"秒");
+        return CommonResponse.success("一共消耗了" + (time4 - time3) / 1000 + "秒");
     }
 
     @ResponseBody
     @RequestMapping(value = "/get/obj")
-    public CommonResponse getobj(HttpServletRequest request, HttpServletResponse response){
+    public CommonResponse getobj(HttpServletRequest request, HttpServletResponse response) {
         dataMap.clear();
         long time3 = System.currentTimeMillis();
-
-        if (!new File(outPath).exists()){
+        //如果日期数据存在就加载
+        if (new File(dataoutPath).exists()) {
+            try (ObjectInputStream oos = new ObjectInputStream(new FileInputStream(dataoutPath));) {
+                lyqDateList = (List<LyqDate>) oos.readObject();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            log.info("日期对象加载成功！！！");
+        }
+        if (!new File(outPath).exists()) {
             return CommonResponse.fail("数据不存在！1.先初始化数据2.下载数据");
         }
         //设置请求头
-        try (ObjectInputStream oos =new ObjectInputStream(new FileInputStream(outPath));) {
+        try (ObjectInputStream oos = new ObjectInputStream(new FileInputStream(outPath));) {
             dataMap = (Map<Integer, List<LyqTable>>) oos.readObject();
+            log.info("内存对象加载成功！！！");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -622,17 +605,15 @@ public class BTotalController {
      */
     private static Integer groupNum = 21;
 
-    @Autowired
-    private LyqTableService lyqTableService;
-
-    @Autowired
-    private LyqDateService lyqDateService;
-
     private static Map<Integer, List<LyqTable>> dataMap = new HashMap<>();
+
+    private static List<LyqDate> lyqDateList = new ArrayList<>();
 
     private static Map<String, Object> map = new HashMap<>();
 
     private static Map<String, Object> intByFile = new HashMap<>();
 
     private static String outPath = "D:/内存数据.txt";
+
+    private static String dataoutPath = "D:/日期数据.txt";
 }

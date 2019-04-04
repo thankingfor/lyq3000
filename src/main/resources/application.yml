@@ -1,28 +1,10 @@
 server:
   port: 8080
 
-spring:
-  datasource:
-    url: jdbc:mysql://47.95.196.58:3306/lyq3000?useUnicode=true&characterEncoding=UTF-8
-    username: root
-    password: 123456
-    driver-class-name: com.mysql.jdbc.Driver
-    type: com.alibaba.druid.pool.DruidDataSource
-  jmx:
-    enabled: false #一个tomcat下多个springboot项目需要配置这个  不然报错
-
-
 logging:
   level:
     vip.bzsy: info
 
-mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml  #扫描xml
-  type-aliases-package: vip.bzsy.model #javabeen
-  global-config:
-    db-config: #逻辑删除
-      logic-delete-value: 1
-      logic-not-delete-value: 0
 
 
 

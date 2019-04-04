@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 
 import java.io.IOException;
@@ -120,23 +119,6 @@ public class CommonUtils {
      */
     public static boolean isNotEmpty(Object obj) {
         return !isEmpty(obj);
-    }
-
-    //--------------------日期转换utils----------------------------
-    private static String[] parsePatterns = {
-            "yyyy-MM-dd", "yyyy/MM/dd", "yyyy.MM.dd"
-    };
-
-    public static Date parseStringDate(String dateString)
-            throws CommonException {
-
-        try {
-            return DateUtils.parseDate(
-                    dateString, parsePatterns
-            );
-        } catch (Exception ex) {
-            throw new CommonException(ex.getMessage());
-        }
     }
 
     //--------------------io流----------------------------
