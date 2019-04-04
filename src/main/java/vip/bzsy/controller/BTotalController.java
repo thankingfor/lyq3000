@@ -280,7 +280,7 @@ public class BTotalController {
                 listant.add(Integer.valueOf(cellStringValue));
             }
         }
-        log.info("上传数据之list集合" + listant.toString());
+        //log.info("上传数据之list集合" + listant.toString());
         intByFile.clear();
         intByFile.put("dateNum", lyqDate.getDateNum());
         intByFile.put("list", listant);
