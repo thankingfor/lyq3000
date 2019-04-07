@@ -22,6 +22,7 @@
             table1show();
             table2show();
             initFileInput("uploadFile")
+            initFileInput("upload2File")
         })
 
         /**
@@ -36,7 +37,7 @@
                 language: 'zh', //设置语言
                 allowedFileExtensions: ['xls', 'xlsx'],//接收的文件后缀
                 showUpload: false, //是否显示上传按钮
-                showCaption: false,//是否显示标题
+                showCaption: true,//是否显示标题
                 browseClass: "btn btn-primary", //按钮样式
                 showPreview: false, //是否显示预览
                 previewFileIcon: "<i class='glyphicon glyphicon-king'></i>",
@@ -256,7 +257,33 @@
                 },
             })
         }
-
+        function copyUpload2() {
+            var file = $('#upload2File')[0];
+            var formData = new FormData();
+            formData.append('file', file.files[0]);
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: "[[@{/bt/upload2}]]",
+                async: false,//异步  true 同步
+                cache: false,//缓存 false的话会在url后面加一个时间缀，让它跑到服务器获取结果。
+                contentType: false,//上传的时候必须要
+                processData: false,
+                data: formData,
+                success: function (result) {
+                    if (result.code == 1) {
+                        window.location.href = "[[@{/bt/copy}]]";
+                        $('#table1').bootstrapTable("refresh");
+                        $('#table2').bootstrapTable("refresh");
+                    } else {
+                        alert(result.msg)
+                    }
+                },
+                error: function () {
+                    alert("上传失败")
+                },
+            })
+        }
         function lookData() {
             $.ajax({
                 type: "get",
@@ -280,17 +307,23 @@
     <div class="col-md-2">
         <div class="list-group">
             <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
+                    data-target="#initModel">1.从文件读取数据到系统
+            </button>
+            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
+                    data-target="#upload2Modal">2.第二步单独运行
+            </button>
+            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
+                    data-target="#uploadModal">3.第一步第二步同时运行
+            </button>
+            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
+                    data-target="#insertDataModel">3.保存系统数据到文件
+            </button>
+
+
+            <button type="button" class="btn btn-success" style="margin-top: 100px" onclick="donwloadTem()">下载上传模板</button>
+
+            <button type="button" class="btn btn-default" style="margin-top: 100px" data-toggle="modal"
                     data-target="#initDataModel">初始化系统内存数据
-            </button>
-            <button type="button" class="btn btn-success m-2 p-2" onclick="donwloadTem()">下载上传模板</button>
-            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
-                    data-target="#uploadModal">上传3000行数字
-            </button>
-            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
-                    data-target="#initModel">从文件读取数据到系统
-            </button>
-            <button type="button" class="btn btn-success m-2 p-2" data-toggle="modal"
-                    data-target="#insertDataModel">保存系统数据到文件
             </button>
             <!--<button type="button" class="btn btn-success m-2 p-2" onclick="lookData()">控制台查看数据</button>-->
         </div>
@@ -398,6 +431,7 @@
                 </button>
             </div>
             <div class="modal-body">
+                <h3 style="color: #bd2130">第一步第二步同时操作</h3>
                 <form id="selectPicForm">
                     <input type="file" id="uploadFile" name="uploadFile">
                 </form>
@@ -405,6 +439,26 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
                 <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="copyUpload()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="upload2Modal" tabindex="-1" role="dialog" aria-labelledby="upload2ModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h3 style="color: #bd2130">单独操作第二步</h3>
+                <form id="select2PicForm">
+                    <input type="file" id="upload2File" name="uploadFile">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="copyUpload2()">保存</button>
             </div>
         </div>
     </div>

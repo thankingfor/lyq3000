@@ -13,5 +13,6 @@ public class Type2Vo {
 
     private Integer group;
     private Integer seq;
+    private Integer key;
     private Integer value;
 }
