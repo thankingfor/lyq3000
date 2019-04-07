@@ -93,12 +93,16 @@ public class BTotalController {
         HSSFWorkbook workbook = copyDownMax(listMax, type2VoListType, dateNum);
         //5.创建文件名
         String fileName = dateNum + ".xls";
+        log.info(fileName);
         //6.获取输出流对象
         response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "utf-8"));
         response.setContentType("multipart/form-data");
+        log.info("设置请求头");
         //设置请求头
         ServletOutputStream outputStream = response.getOutputStream();
+        log.info("获取输出流");
         workbook.write(outputStream);
+        log.info("写入输出流");
         /**
          * 结果统计
          */
